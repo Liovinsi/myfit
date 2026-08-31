@@ -41,6 +41,11 @@ export default function FoodCard({
           <p className="mt-1 text-sm font-semibold text-slate-500">
             Protein {formatNumber(food.nutrition.protein)} g | Fiber {formatNumber(food.nutrition.fiber)} g
           </p>
+          {(food.nutrition.carbs > 0 || food.nutrition.fat > 0) && (
+            <p className="mt-1 text-sm font-semibold text-slate-500">
+              Carbs {formatNumber(food.nutrition.carbs || 0)} g | Fat {formatNumber(food.nutrition.fat || 0)} g
+            </p>
+          )}
         </div>
       </div>
 

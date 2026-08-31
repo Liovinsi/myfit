@@ -4,7 +4,11 @@ export function calculateNutrition(food, quantityAmount) {
   return {
     calories: roundNutrition(food.nutrition.calories * ratio),
     protein: roundNutrition(food.nutrition.protein * ratio),
-    fiber: roundNutrition(food.nutrition.fiber * ratio)
+    fiber: roundNutrition(food.nutrition.fiber * ratio),
+    carbs: roundNutrition((food.nutrition.carbs || 0) * ratio),
+    fat: roundNutrition((food.nutrition.fat || 0) * ratio),
+    sugar: roundNutrition((food.nutrition.sugar || 0) * ratio),
+    caffeine: roundNutrition((food.nutrition.caffeine || 0) * ratio)
   }
 }
 

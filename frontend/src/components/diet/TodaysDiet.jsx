@@ -10,15 +10,26 @@ function formatNumber(value) {
 export default function TodaysDiet({ diet, onQuantityChange, onRemove, updatingId }) {
   const hasEntries = diet.entries?.length > 0
 
+  const totals = diet.totals || {}
+  const summaryCards = [
+    { label: 'Calories', value: `${formatNumber(totals.calories || 0)} kcal` },
+    { label: 'Protein', value: `${formatNumber(totals.protein || 0)} g` },
+    { label: 'Fiber', value: `${formatNumber(totals.fiber || 0)} g` },
+    { label: 'Carbs', value: `${formatNumber(totals.carbs || 0)} g` },
+    { label: 'Fat', value: `${formatNumber(totals.fat || 0)} g` }
+  ]
+
   return (
     <section className="dashboard-card p-5">
-      <div className="flex flex-col gap-3 border-b border-slate-100 pb-5 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-accent">Today's Diet</p>
-          <h2 className="mt-2 text-2xl font-extrabold text-navy">
-            {formatNumber(diet.totals?.calories || 0)} kcal | P {formatNumber(diet.totals?.protein || 0)} g | F{' '}
-            {formatNumber(diet.totals?.fiber || 0)} g
-          </h2>
+      <div className="border-b border-slate-100 pb-5">
+        <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-accent">Today's Diet</p>
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
+          {summaryCards.map((card) => (
+            <div key={card.label} className="rounded-2xl bg-slate-50 p-3 text-center">
+              <p className="text-xs font-bold uppercase tracking-wide text-slate-500">{card.label}</p>
+              <p className="mt-1 text-lg font-extrabold text-navy">{card.value}</p>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -57,6 +68,10 @@ export default function TodaysDiet({ diet, onQuantityChange, onRemove, updatingI
                             <p className="mt-1 text-sm font-bold text-slate-700">
                               {formatNumber(entry.nutrition.calories)} kcal | P {formatNumber(entry.nutrition.protein)} g
                               | F {formatNumber(entry.nutrition.fiber)} g
+                              {(entry.nutrition.carbs || 0) > 0 && ` | C ${formatNumber(entry.nutrition.carbs)} g`}
+                              {(entry.nutrition.fat || 0) > 0 && ` | Fat ${formatNumber(entry.nutrition.fat)} g`}
+                              {(entry.nutrition.sugar || 0) > 0 && ` | Sugar ${formatNumber(entry.nutrition.sugar)} g`}
+                              {(entry.nutrition.caffeine || 0) > 0 && ` | Caffeine ${formatNumber(entry.nutrition.caffeine)} mg`}
                             </p>
                           </div>
                           <div className="flex flex-wrap items-center gap-2">

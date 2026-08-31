@@ -20,6 +20,18 @@ const dailyStatsSchema = new mongoose.Schema(
       required: true,
       default: 0,
       min: 0
+    },
+    caloriesBurned: {
+      type: Number,
+      required: true,
+      default: 0,
+      min: 0
+    },
+    afreshCount: {
+      type: Number,
+      required: true,
+      default: 0,
+      min: 0
     }
   },
   { timestamps: true }

@@ -1,8 +1,11 @@
 import { Beef, Plus, Trash2, Pencil } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import Modal from '../components/common/Modal.jsx'
 import { EmptyState, ErrorState, LoadingState } from '../components/common/StatusState.jsx'
+import Toast from '../components/common/Toast.jsx'
 import TodaysDiet from '../components/diet/TodaysDiet.jsx'
 import { api, getTodayKey } from '../lib/api.js'
+import { useToast } from '../lib/useToast.js'
 
 const emptyForm = {
   name: '',
@@ -11,6 +14,10 @@ const emptyForm = {
   calories: '',
   protein: '',
   fiber: '',
+  carbs: '',
+  fat: '',
+  sugar: '',
+  caffeine: '',
   notes: ''
 }
 
@@ -32,6 +39,10 @@ function formFromProtein(proteinFood) {
     calories: proteinFood.nutrition.calories,
     protein: proteinFood.nutrition.protein,
     fiber: proteinFood.nutrition.fiber,
+    carbs: proteinFood.nutrition.carbs || 0,
+    fat: proteinFood.nutrition.fat || 0,
+    sugar: proteinFood.nutrition.sugar || 0,
+    caffeine: proteinFood.nutrition.caffeine || 0,
     notes: proteinFood.notes || ''
   }
 }
@@ -50,6 +61,7 @@ export default function ProteinFood() {
   const [isAdding, setAdding] = useState(false)
   const [updatingId, setUpdatingId] = useState('')
   const [error, setError] = useState('')
+  const { toastMessage, showToast } = useToast()
 
   async function loadPage(dateKey = selectedDate) {
     setError('')
@@ -103,12 +115,17 @@ export default function ProteinFood() {
       nutrition: {
         calories: Number(form.calories),
         protein: Number(form.protein),
-        fiber: Number(form.fiber)
+        fiber: Number(form.fiber),
+        carbs: Number(form.carbs) || 0,
+        fat: Number(form.fat) || 0,
+        sugar: Number(form.sugar) || 0,
+        caffeine: Number(form.caffeine) || 0
       },
       notes: form.notes.trim()
     }
 
     try {
+      const wasEditing = Boolean(editingProtein)
       const savedProtein = editingProtein
         ? await api.updateProtein(editingProtein._id, payload)
         : await api.createProtein(payload)
@@ -123,6 +140,7 @@ export default function ProteinFood() {
       setEditingProtein(null)
       setForm(emptyForm)
       setShowForm(false)
+      showToast(wasEditing ? 'Protein food updated successfully' : 'Protein food added successfully')
     } catch (saveError) {
       setError(saveError.message)
     } finally {
@@ -203,6 +221,7 @@ export default function ProteinFood() {
 
   return (
     <div className="space-y-6">
+      <Toast message={toastMessage} />
       <section className="flex flex-col gap-4 rounded-3xl bg-white p-6 shadow-card md:flex-row md:items-center md:justify-between md:p-8">
         <div>
           <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-accent">Protein</p>
@@ -224,7 +243,8 @@ export default function ProteinFood() {
       {error && <ErrorState message={error} />}
 
       {showForm && (
-        <form className="dashboard-card p-5" onSubmit={saveProtein}>
+        <Modal onClose={() => { setShowForm(false); setEditingProtein(null); setForm(emptyForm) }}>
+        <form className="dashboard-card max-h-[85vh] overflow-y-auto p-5" onSubmit={saveProtein}>
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-lg font-extrabold text-navy">
               {editingProtein ? 'Edit Protein' : 'Add Protein'}
@@ -310,6 +330,50 @@ export default function ProteinFood() {
                 className="w-full rounded-xl border border-slate-200 px-3 py-2 font-semibold outline-none focus:border-accent"
               />
             </label>
+            <label className="space-y-2 text-sm font-bold text-slate-700">
+              Carbs (g)
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                value={form.carbs}
+                onChange={(event) => updateField('carbs', event.target.value)}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 font-semibold outline-none focus:border-accent"
+              />
+            </label>
+            <label className="space-y-2 text-sm font-bold text-slate-700">
+              Fat (g)
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                value={form.fat}
+                onChange={(event) => updateField('fat', event.target.value)}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 font-semibold outline-none focus:border-accent"
+              />
+            </label>
+            <label className="space-y-2 text-sm font-bold text-slate-700">
+              Sugar (g)
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                value={form.sugar}
+                onChange={(event) => updateField('sugar', event.target.value)}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 font-semibold outline-none focus:border-accent"
+              />
+            </label>
+            <label className="space-y-2 text-sm font-bold text-slate-700">
+              Caffeine (mg)
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                value={form.caffeine}
+                onChange={(event) => updateField('caffeine', event.target.value)}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 font-semibold outline-none focus:border-accent"
+              />
+            </label>
             <label className="space-y-2 text-sm font-bold text-slate-700 md:col-span-2">
               Notes
               <textarea
@@ -320,14 +384,28 @@ export default function ProteinFood() {
             </label>
           </div>
 
-          <button
-            type="submit"
-            disabled={isSaving}
-            className="mt-5 rounded-xl bg-navy px-5 py-3 text-sm font-extrabold text-white shadow-sm disabled:cursor-not-allowed disabled:bg-slate-400"
-          >
-            {isSaving ? 'Saving...' : 'Save Protein'}
-          </button>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="rounded-xl bg-navy px-5 py-3 text-sm font-extrabold text-white shadow-sm disabled:cursor-not-allowed disabled:bg-slate-400"
+            >
+              {isSaving ? 'Saving...' : editingProtein ? 'Save Changes' : 'Save Protein'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowForm(false)
+                setEditingProtein(null)
+                setForm(emptyForm)
+              }}
+              className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-extrabold text-slate-700 hover:bg-slate-100"
+            >
+              Cancel
+            </button>
+          </div>
         </form>
+        </Modal>
       )}
 
       <section className="dashboard-card p-5">
@@ -405,6 +483,18 @@ export default function ProteinFood() {
                   <p className="mt-1 text-sm font-semibold text-slate-500">
                     Fiber {formatNumber(proteinFood.nutrition.fiber)} g
                   </p>
+                  {(proteinFood.nutrition.carbs > 0 || proteinFood.nutrition.fat > 0) && (
+                    <p className="mt-1 text-sm font-semibold text-slate-500">
+                      Carbs {formatNumber(proteinFood.nutrition.carbs || 0)} g · Fat{' '}
+                      {formatNumber(proteinFood.nutrition.fat || 0)} g
+                    </p>
+                  )}
+                  {(proteinFood.nutrition.sugar > 0 || proteinFood.nutrition.caffeine > 0) && (
+                    <p className="mt-1 text-sm font-semibold text-slate-500">
+                      Sugar {formatNumber(proteinFood.nutrition.sugar || 0)} g · Caffeine{' '}
+                      {formatNumber(proteinFood.nutrition.caffeine || 0)} mg
+                    </p>
+                  )}
                 </div>
               </div>
 

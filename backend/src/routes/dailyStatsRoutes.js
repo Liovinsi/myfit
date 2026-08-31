@@ -1,8 +1,13 @@
 import { Router } from 'express'
-import { getDailyStats, upsertDailyStats } from '../controllers/dailyStatsController.js'
+import {
+  getDailyStats,
+  getSuggestedCaloriesBurned,
+  upsertDailyStats
+} from '../controllers/dailyStatsController.js'
 
 const router = Router()
 
+router.get('/suggested-burn/:date', getSuggestedCaloriesBurned)
 router.get('/:date', getDailyStats)
 router.post('/', upsertDailyStats)
 

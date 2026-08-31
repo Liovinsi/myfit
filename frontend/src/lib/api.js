@@ -103,10 +103,10 @@ export const api = {
       body: JSON.stringify({ dateKey, completedExercises, cardioCompleted })
     }),
   getDailyStats: (dateKey = getTodayKey()) => request(`/dailystats/${dateKey}`),
-  saveDailyStats: ({ dateKey = getTodayKey(), steps, waterMl, waterDeltaMl }) =>
+  saveDailyStats: ({ dateKey = getTodayKey(), steps, waterMl, waterDeltaMl, caloriesBurned, afreshCount, afreshCountDelta }) =>
     request('/dailystats', {
       method: 'POST',
-      body: JSON.stringify({ dateKey, steps, waterMl, waterDeltaMl })
+      body: JSON.stringify({ dateKey, steps, waterMl, waterDeltaMl, caloriesBurned, afreshCount, afreshCountDelta })
     }),
   getWeightEntry: (dateKey = getTodayKey()) => request(`/weights/${dateKey}`),
   getLatestWeight: () => request('/weights/latest'),
@@ -126,5 +126,74 @@ export const api = {
   getWeeklyChallenges: (dateKey = getTodayKey()) => request(`/challenges/weekly?date=${dateKey}`),
   getProgressHistory: (range = '7d') => request(`/progress/history?range=${range}`),
   getRewards: () => request('/rewards'),
-  getRewardsForDate: (dateKey = getTodayKey()) => request(`/rewards/${dateKey}`)
+  getRewardsForDate: (dateKey = getTodayKey()) => request(`/rewards/${dateKey}`),
+  getSuggestedCaloriesBurned: (dateKey = getTodayKey()) =>
+    request(`/dailystats/suggested-burn/${dateKey}`),
+
+  getRoutine: (dateKey = getTodayKey()) => request(`/routine/${dateKey}`),
+  saveRoutineProgress: ({ dateKey = getTodayKey(), completedItems }) =>
+    request('/routine', {
+      method: 'PATCH',
+      body: JSON.stringify({ dateKey, completedItems })
+    }),
+
+  getChecklist: (dateKey = getTodayKey()) => request(`/checklist/${dateKey}`),
+  setDietFollowed: ({ dateKey = getTodayKey(), dietFollowed }) =>
+    request('/checklist', {
+      method: 'PATCH',
+      body: JSON.stringify({ dateKey, dietFollowed })
+    }),
+
+  getHundredDaysChallenge: () => request('/hundred-days'),
+  toggleHundredDaysDay: (dayNumber) =>
+    request(`/hundred-days/day/${dayNumber}`, { method: 'PATCH' }),
+
+  getProfile: () => request('/profile'),
+  updateProfile: (name) =>
+    request('/profile', {
+      method: 'PUT',
+      body: JSON.stringify({ name })
+    }),
+  uploadProfileImage: async (file) => {
+    const formData = new FormData()
+    formData.append('image', file)
+
+    let response
+
+    try {
+      response = await fetch(`${API_BASE_URL}/profile/image`, {
+        method: 'POST',
+        body: formData
+      })
+    } catch {
+      throw new Error(`Cannot reach MyFit backend at ${API_BASE_URL}`)
+    }
+
+    if (!response.ok) {
+      let message = 'Image upload failed'
+
+      try {
+        const body = await response.json()
+        message = body.message || message
+      } catch {
+        message = response.statusText || message
+      }
+
+      throw new Error(message)
+    }
+
+    return response.json()
+  }
+}
+
+export function resolveAssetUrl(path) {
+  if (!path) {
+    return ''
+  }
+
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path
+  }
+
+  return `${API_BASE_URL.replace(/\/api$/, '')}${path}`
 }

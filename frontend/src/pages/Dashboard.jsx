@@ -3,6 +3,7 @@ import {
   Flame,
   Footprints,
   HandCoins,
+  HeartPulse,
   ShieldCheck,
   Utensils,
   Weight
@@ -12,6 +13,7 @@ import FutureSelfSection from '../components/dashboard/FutureSelfSection.jsx'
 import DailyTrackingCard from '../components/dashboard/DailyTrackingCard.jsx'
 import MotivationCard from '../components/dashboard/MotivationCard.jsx'
 import ProgressCard from '../components/dashboard/ProgressCard.jsx'
+import ProteinSection from '../components/dashboard/ProteinSection.jsx'
 import StatCard from '../components/dashboard/StatCard.jsx'
 import TodaysChallengesCard from '../components/dashboard/TodaysChallengesCard.jsx'
 import WorkoutPreview from '../components/dashboard/WorkoutPreview.jsx'
@@ -28,19 +30,23 @@ function formatToday(date = new Date()) {
 
 export default function Dashboard() {
   const [totals, setTotals] = useState({ calories: 0, protein: 0, fiber: 0 })
-  const [dailyStats, setDailyStats] = useState({ steps: 0, waterMl: 0 })
+  const [dailyStats, setDailyStats] = useState({ steps: 0, waterMl: 0, caloriesBurned: 0 })
   const [selectedDate, setSelectedDate] = useState(getTodayKey())
   const [stepsInput, setStepsInput] = useState('0')
   const [waterInput, setWaterInput] = useState('0')
-  const [workoutCompleted, setWorkoutCompleted] = useState(false)
+  const [burnedInput, setBurnedInput] = useState('0')
+  const [suggestedBurn, setSuggestedBurn] = useState(0)
+  const [workoutState, setWorkoutState] = useState(null)
   const [currentWeightKg, setCurrentWeightKg] = useState(null)
   const [targetWeightKg, setTargetWeightKg] = useState(null)
+  const [startWeightKg, setStartWeightKg] = useState(null)
   const [totalCoins, setTotalCoins] = useState(0)
   const [status, setStatus] = useState('loading')
   const [statsStatus, setStatsStatus] = useState('loading')
   const [statsError, setStatsError] = useState('')
   const [savingSteps, setSavingSteps] = useState(false)
   const [savingWater, setSavingWater] = useState(false)
+  const [savingBurned, setSavingBurned] = useState(false)
 
   useEffect(() => {
     let isMounted = true
@@ -51,16 +57,19 @@ export default function Dashboard() {
       setStatsError('')
 
       try {
-        const [diet, stats] = await Promise.all([
+        const [diet, stats, suggested] = await Promise.all([
           api.getTodayDiet(selectedDate),
-          api.getDailyStats(selectedDate)
+          api.getDailyStats(selectedDate),
+          api.getSuggestedCaloriesBurned(selectedDate)
         ])
 
         if (isMounted) {
           setTotals(diet.totals || { calories: 0, protein: 0, fiber: 0 })
-          setDailyStats({ steps: stats.steps || 0, waterMl: stats.waterMl || 0 })
+          setDailyStats({ steps: stats.steps || 0, waterMl: stats.waterMl || 0, caloriesBurned: stats.caloriesBurned || 0 })
           setStepsInput(String(stats.steps || 0))
           setWaterInput(String(stats.waterMl || 0))
+          setBurnedInput(String(stats.caloriesBurned || 0))
+          setSuggestedBurn(suggested.suggestedCaloriesBurned || 0)
           setStatus('ready')
           setStatsStatus('ready')
         }
@@ -85,11 +94,18 @@ export default function Dashboard() {
 
     async function loadWeight() {
       try {
-        const [latest, goal] = await Promise.all([api.getLatestWeight(), api.getWeightGoal()])
+        const [latest, goal, history] = await Promise.all([
+          api.getLatestWeight(),
+          api.getWeightGoal(),
+          api.getWeightHistory(100)
+        ])
 
         if (isMounted) {
           setCurrentWeightKg(latest.entry?.weightKg ?? null)
           setTargetWeightKg(goal.targetWeightKg ?? null)
+          const entries = Array.isArray(history) ? history : []
+          const oldest = entries[entries.length - 1]
+          setStartWeightKg(oldest?.weightKg ?? null)
         }
       } catch {
         // Current Weight card falls back to its placeholder values below.
@@ -144,7 +160,7 @@ export default function Dashboard() {
         dateKey: selectedDate,
         steps: Number(stepsInput)
       })
-      setDailyStats({ steps: stats.steps || 0, waterMl: stats.waterMl || 0 })
+      setDailyStats({ steps: stats.steps || 0, waterMl: stats.waterMl || 0, caloriesBurned: stats.caloriesBurned || 0 })
       setStepsInput(String(stats.steps || 0))
     } catch (saveError) {
       setStatsError(saveError.message)
@@ -163,7 +179,7 @@ export default function Dashboard() {
         dateKey: selectedDate,
         waterMl: Number(waterInput)
       })
-      setDailyStats({ steps: stats.steps || 0, waterMl: stats.waterMl || 0 })
+      setDailyStats({ steps: stats.steps || 0, waterMl: stats.waterMl || 0, caloriesBurned: stats.caloriesBurned || 0 })
       setWaterInput(String(stats.waterMl || 0))
     } catch (saveError) {
       setStatsError(saveError.message)
@@ -181,7 +197,7 @@ export default function Dashboard() {
         dateKey: selectedDate,
         waterDeltaMl
       })
-      setDailyStats({ steps: stats.steps || 0, waterMl: stats.waterMl || 0 })
+      setDailyStats({ steps: stats.steps || 0, waterMl: stats.waterMl || 0, caloriesBurned: stats.caloriesBurned || 0 })
       setWaterInput(String(stats.waterMl || 0))
     } catch (saveError) {
       setStatsError(saveError.message)
@@ -189,6 +205,59 @@ export default function Dashboard() {
       setSavingWater(false)
     }
   }
+
+  async function saveBurned(event) {
+    event.preventDefault()
+    setSavingBurned(true)
+    setStatsError('')
+
+    try {
+      const stats = await api.saveDailyStats({
+        dateKey: selectedDate,
+        caloriesBurned: Number(burnedInput)
+      })
+      setDailyStats({ steps: stats.steps || 0, waterMl: stats.waterMl || 0, caloriesBurned: stats.caloriesBurned || 0 })
+      setBurnedInput(String(stats.caloriesBurned || 0))
+    } catch (saveError) {
+      setStatsError(saveError.message)
+    } finally {
+      setSavingBurned(false)
+    }
+  }
+
+  async function useSuggestedBurn() {
+    setBurnedInput(String(suggestedBurn))
+    setSavingBurned(true)
+    setStatsError('')
+
+    try {
+      const stats = await api.saveDailyStats({ dateKey: selectedDate, caloriesBurned: suggestedBurn })
+      setDailyStats({ steps: stats.steps || 0, waterMl: stats.waterMl || 0, caloriesBurned: stats.caloriesBurned || 0 })
+    } catch (saveError) {
+      setStatsError(saveError.message)
+    } finally {
+      setSavingBurned(false)
+    }
+  }
+
+  const workoutCompleted = Boolean(workoutState?.completed)
+  const cardioCompleted = Boolean(workoutState?.completion?.cardioCompleted)
+  const caloriesBurned = statsStatus === 'ready' ? dailyStats.caloriesBurned : 0
+
+  const weightProgressPercent = (() => {
+    if (currentWeightKg == null || targetWeightKg == null || startWeightKg == null) {
+      return null
+    }
+
+    const totalToChange = targetWeightKg - startWeightKg
+
+    if (totalToChange === 0) {
+      return 100
+    }
+
+    const changedSoFar = currentWeightKg - startWeightKg
+    return Math.min(100, Math.max(0, Math.round((changedSoFar / totalToChange) * 100)))
+  })()
 
   const cards = [
     { title: 'Calories', value: `${calories} / 1300 kcal`, target: '1300 kcal', icon: Flame, tone: 'pink' },
@@ -199,6 +268,13 @@ export default function Dashboard() {
       target: 'Monday - Saturday',
       icon: ShieldCheck,
       tone: 'navy'
+    },
+    {
+      title: 'Cardio',
+      value: cardioCompleted ? 'Completed' : 'Not Completed',
+      target: '30 minutes daily',
+      icon: HeartPulse,
+      tone: 'pink'
     }
   ]
 
@@ -229,6 +305,13 @@ export default function Dashboard() {
           />
         </label>
       </section>
+
+      <ProteinSection
+        calories={calories}
+        protein={protein}
+        waterMl={waterMl}
+        workoutCompleted={workoutCompleted}
+      />
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <StatCard {...cards[0]} />
@@ -317,6 +400,52 @@ export default function Dashboard() {
           </form>
         </DailyTrackingCard>
         <StatCard {...cards[2]} />
+        <StatCard {...cards[3]} />
+        <DailyTrackingCard
+          title="Calories Burned"
+          value={caloriesBurned}
+          target={Math.max(suggestedBurn, 1)}
+          valueLabel={`${caloriesBurned} kcal`}
+          targetLabel={`${suggestedBurn} kcal est.`}
+          icon={Flame}
+          tone="green"
+          completed={suggestedBurn > 0 && caloriesBurned >= suggestedBurn}
+          completedLabel="Estimated Burn Reached"
+        >
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={savingBurned || suggestedBurn === 0}
+              onClick={useSuggestedBurn}
+              className="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-extrabold text-white shadow-sm disabled:cursor-not-allowed disabled:bg-slate-400"
+            >
+              Use Suggested ({suggestedBurn} kcal)
+            </button>
+          </div>
+          <form onSubmit={saveBurned} className="mt-3 flex flex-col gap-2">
+            <label className="text-xs font-bold text-slate-600" htmlFor="burned-input">
+              Edit calories burned
+            </label>
+            <div className="flex gap-2">
+              <input
+                id="burned-input"
+                type="number"
+                min="0"
+                step="10"
+                value={burnedInput}
+                onChange={(event) => setBurnedInput(event.target.value)}
+                className="min-w-0 flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold outline-none focus:border-accent"
+              />
+              <button
+                type="submit"
+                disabled={savingBurned}
+                className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-extrabold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:text-slate-400"
+              >
+                Save
+              </button>
+            </div>
+          </form>
+        </DailyTrackingCard>
       </section>
 
       {status === 'error' && (
@@ -335,19 +464,28 @@ export default function Dashboard() {
       <section className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
         <div className="flex flex-col gap-4">
           <ProgressCard />
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <StatCard
               title="Current Weight"
               value={currentWeightKg != null ? `${currentWeightKg} kg` : '-- kg'}
-              detail={`Target Weight: ${targetWeightKg != null ? `${targetWeightKg} kg` : '-- kg'}`}
+              detail={`Goal Weight: ${targetWeightKg != null ? `${targetWeightKg} kg` : '-- kg'}`}
               icon={Weight}
               tone="blue"
             />
+            <StatCard
+              title="Weight Progress"
+              value={weightProgressPercent != null ? `${weightProgressPercent}%` : '--%'}
+              detail="Toward your goal weight"
+              icon={Flame}
+              tone="pink"
+            />
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <StatCard title="Current Streak" value="0 Days" icon={Flame} tone="pink" />
             <StatCard title="Coins" value={String(totalCoins)} icon={HandCoins} tone="green" />
           </div>
         </div>
-        <WorkoutPreview onStatusChange={setWorkoutCompleted} />
+        <WorkoutPreview onStatusChange={setWorkoutState} />
       </section>
 
       <TodaysChallengesCard />

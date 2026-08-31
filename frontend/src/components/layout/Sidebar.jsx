@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import ProfileAvatar from '../profile/ProfileAvatar.jsx'
 import Brand from './Brand.jsx'
 import { navigationItems } from './navigation.js'
 
@@ -18,7 +19,7 @@ export default function Sidebar({ isOpen, onClose }) {
         }`}
       >
         <Brand />
-        <nav className="mt-9 space-y-1">
+        <nav className="mt-9 flex-1 space-y-1 overflow-y-auto pb-4">
           {navigationItems.map((item) => {
             const Icon = item.icon
             return (
@@ -40,6 +41,7 @@ export default function Sidebar({ isOpen, onClose }) {
             )
           })}
         </nav>
+        <ProfileAvatar />
       </aside>
     </>
   )

@@ -11,7 +11,11 @@ function foodPayload(body) {
     nutrition: {
       calories: Number(body.nutrition?.calories),
       protein: Number(body.nutrition?.protein),
-      fiber: Number(body.nutrition?.fiber)
+      fiber: Number(body.nutrition?.fiber),
+      carbs: Number(body.nutrition?.carbs) || 0,
+      fat: Number(body.nutrition?.fat) || 0,
+      sugar: Number(body.nutrition?.sugar) || 0,
+      caffeine: Number(body.nutrition?.caffeine) || 0
     },
     notes: body.notes || ''
   }

@@ -4,7 +4,7 @@ const CALORIE_TARGET = 1300
 const PROTEIN_TARGET = 70
 const WATER_TARGET_ML = 4000
 
-export default function DailyNutritionSection({ calories, protein, waterMl }) {
+export default function DailyNutritionSection({ calories, protein, waterMl, fiber, carbs, fat }) {
   const waterLitres = Math.round((waterMl / 1000) * 10) / 10
 
   return (
@@ -34,6 +34,11 @@ export default function DailyNutritionSection({ calories, protein, waterMl }) {
           valueLabel={`${waterLitres} / 4 L`}
         />
       </div>
+      {(fiber !== undefined || carbs !== undefined || fat !== undefined) && (
+        <p className="mt-4 text-center text-sm font-bold text-slate-600">
+          Fiber {fiber || 0} g · Carbs {carbs || 0} g · Fat {fat || 0} g
+        </p>
+      )}
     </section>
   )
 }

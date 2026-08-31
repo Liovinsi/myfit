@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import Modal from '../common/Modal.jsx'
 
 const emptyForm = {
   name: '',
@@ -8,6 +9,10 @@ const emptyForm = {
   calories: '',
   protein: '',
   fiber: '',
+  carbs: '',
+  fat: '',
+  sugar: '',
+  caffeine: '',
   notes: ''
 }
 
@@ -35,6 +40,10 @@ function formFromFood(food) {
     calories: food.nutrition.calories,
     protein: food.nutrition.protein,
     fiber: food.nutrition.fiber,
+    carbs: food.nutrition.carbs || 0,
+    fat: food.nutrition.fat || 0,
+    sugar: food.nutrition.sugar || 0,
+    caffeine: food.nutrition.caffeine || 0,
     notes: food.notes || ''
   }
 }
@@ -63,7 +72,11 @@ export default function FoodForm({ editingFood, onCancel, onSave, isSaving }) {
       nutrition: {
         calories: Number(form.calories),
         protein: Number(form.protein),
-        fiber: Number(form.fiber)
+        fiber: Number(form.fiber),
+        carbs: Number(form.carbs) || 0,
+        fat: Number(form.fat) || 0,
+        sugar: Number(form.sugar) || 0,
+        caffeine: Number(form.caffeine) || 0
       },
       notes: form.notes.trim()
     })
@@ -74,7 +87,8 @@ export default function FoodForm({ editingFood, onCancel, onSave, isSaving }) {
     : [form.category, ...categoryOptions]
 
   return (
-    <form className="dashboard-card p-5" onSubmit={handleSubmit}>
+    <Modal onClose={onCancel}>
+    <form className="dashboard-card max-h-[85vh] overflow-y-auto p-5" onSubmit={handleSubmit}>
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-lg font-extrabold text-navy">{editingFood ? 'Edit Food' : 'Add Food'}</h2>
         <button type="button" className="text-sm font-bold text-slate-500 hover:text-navy" onClick={onCancel}>
@@ -165,6 +179,50 @@ export default function FoodForm({ editingFood, onCancel, onSave, isSaving }) {
             className="w-full rounded-xl border border-slate-200 px-3 py-2 font-semibold outline-none focus:border-accent"
           />
         </label>
+        <label className="space-y-2 text-sm font-bold text-slate-700">
+          Carbs (g)
+          <input
+            type="number"
+            step="0.1"
+            min="0"
+            value={form.carbs}
+            onChange={(event) => updateField('carbs', event.target.value)}
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 font-semibold outline-none focus:border-accent"
+          />
+        </label>
+        <label className="space-y-2 text-sm font-bold text-slate-700">
+          Fat (g)
+          <input
+            type="number"
+            step="0.1"
+            min="0"
+            value={form.fat}
+            onChange={(event) => updateField('fat', event.target.value)}
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 font-semibold outline-none focus:border-accent"
+          />
+        </label>
+        <label className="space-y-2 text-sm font-bold text-slate-700">
+          Sugar (g)
+          <input
+            type="number"
+            step="0.1"
+            min="0"
+            value={form.sugar}
+            onChange={(event) => updateField('sugar', event.target.value)}
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 font-semibold outline-none focus:border-accent"
+          />
+        </label>
+        <label className="space-y-2 text-sm font-bold text-slate-700">
+          Caffeine (mg)
+          <input
+            type="number"
+            step="0.1"
+            min="0"
+            value={form.caffeine}
+            onChange={(event) => updateField('caffeine', event.target.value)}
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 font-semibold outline-none focus:border-accent"
+          />
+        </label>
         <label className="space-y-2 text-sm font-bold text-slate-700 md:col-span-2">
           Notes
           <textarea
@@ -175,13 +233,23 @@ export default function FoodForm({ editingFood, onCancel, onSave, isSaving }) {
         </label>
       </div>
 
-      <button
-        type="submit"
-        disabled={isSaving}
-        className="mt-5 rounded-xl bg-navy px-5 py-3 text-sm font-extrabold text-white shadow-sm disabled:cursor-not-allowed disabled:bg-slate-400"
-      >
-        {isSaving ? 'Saving...' : 'Save Food'}
-      </button>
+      <div className="mt-5 flex flex-wrap gap-3">
+        <button
+          type="submit"
+          disabled={isSaving}
+          className="rounded-xl bg-navy px-5 py-3 text-sm font-extrabold text-white shadow-sm disabled:cursor-not-allowed disabled:bg-slate-400"
+        >
+          {isSaving ? 'Saving...' : editingFood ? 'Save Changes' : 'Save Food'}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-extrabold text-slate-700 hover:bg-slate-100"
+        >
+          Cancel
+        </button>
+      </div>
     </form>
+    </Modal>
   )
 }

@@ -1,11 +1,14 @@
 import { Plus } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import AfreshCounter from '../components/diet/AfreshCounter.jsx'
 import FoodCard from '../components/diet/FoodCard.jsx'
 import FoodForm from '../components/diet/FoodForm.jsx'
 import MealSelector from '../components/diet/MealSelector.jsx'
 import TodaysDiet from '../components/diet/TodaysDiet.jsx'
 import { EmptyState, ErrorState, LoadingState } from '../components/common/StatusState.jsx'
+import Toast from '../components/common/Toast.jsx'
 import { api, getTodayKey } from '../lib/api.js'
+import { useToast } from '../lib/useToast.js'
 
 export default function DietFood() {
   const [foods, setFoods] = useState([])
@@ -21,6 +24,9 @@ export default function DietFood() {
   const [showMealSelector, setShowMealSelector] = useState(false)
   const [updatingId, setUpdatingId] = useState('')
   const [selectedDate, setSelectedDate] = useState(getTodayKey())
+  const [afreshCount, setAfreshCount] = useState(0)
+  const [isSavingAfresh, setSavingAfresh] = useState(false)
+  const { toastMessage, showToast } = useToast()
 
   const addedFoodIds = useMemo(
     () => new Set((diet.entries || []).map((entry) => entry.food)),
@@ -32,9 +38,14 @@ export default function DietFood() {
     setLoading(true)
 
     try {
-      const [foodList, todayDiet] = await Promise.all([api.getFoods(), api.getTodayDiet(dateKey)])
+      const [foodList, todayDiet, dailyStats] = await Promise.all([
+        api.getFoods(),
+        api.getTodayDiet(dateKey),
+        api.getDailyStats(dateKey)
+      ])
       setFoods(foodList)
       setDiet(todayDiet)
+      setAfreshCount(dailyStats.afreshCount || 0)
     } catch (loadError) {
       setError(loadError.message)
     } finally {
@@ -67,6 +78,7 @@ export default function DietFood() {
     setError('')
 
     try {
+      const wasEditing = Boolean(editingFood)
       const savedFood = editingFood
         ? await api.updateFood(editingFood._id, foodPayload)
         : await api.createFood(foodPayload)
@@ -78,6 +90,8 @@ export default function DietFood() {
       )
       setShowForm(false)
       setEditingFood(null)
+      await loadPage(selectedDate)
+      showToast(wasEditing ? 'Food updated successfully' : 'Food added successfully')
     } catch (saveError) {
       setError(saveError.message)
     } finally {
@@ -151,15 +165,30 @@ export default function DietFood() {
     }
   }
 
+  async function changeAfresh(delta) {
+    setSavingAfresh(true)
+    setError('')
+
+    try {
+      const stats = await api.saveDailyStats({ dateKey: selectedDate, afreshCountDelta: delta })
+      setAfreshCount(stats.afreshCount || 0)
+    } catch (afreshError) {
+      setError(afreshError.message)
+    } finally {
+      setSavingAfresh(false)
+    }
+  }
+
   if (isLoading) {
     return <LoadingState label="Loading Diet Food..." />
   }
 
   return (
     <div className="space-y-6">
+      <Toast message={toastMessage} />
       <section className="flex flex-col gap-4 rounded-3xl bg-white p-6 shadow-card md:flex-row md:items-center md:justify-between md:p-8">
         <div>
-          <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-accent">Diet Food</p>
+          <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-accent">Diet Library</p>
           <h1 className="mt-2 text-3xl font-extrabold text-navy">My Regular Foods</h1>
           <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-slate-500">
             Tick the foods eaten today, choose a meal, and add them to Today's Diet.
@@ -230,6 +259,8 @@ export default function DietFood() {
           </div>
         </div>
       </section>
+
+      <AfreshCounter count={afreshCount} onChange={changeAfresh} isSaving={isSavingAfresh} />
 
       {showMealSelector && (
         <MealSelector

@@ -1,6 +1,53 @@
 # MyFit Handover
 
-Last updated: 2026-08-12
+Last updated: 2026-08-14
+
+## Phase 10: Final Requirements Build (2026-08-14)
+
+Implemented the "Oh MyFit" final requirements doc on top of the existing app. Decision made with the user: keep all existing modules (Challenges, Coins, Progress, History) and add the new ones alongside them rather than replacing anything.
+
+New backend modules (all under `requireMongoConnection`, same pattern as existing routes):
+
+- **Daily Routine**: `backend/src/data/dailyRoutine.js` (static schedule matching the spec exactly — wake time, pre/post workout, 11am, lunch, alternate-day shake, dinner, 3L water target), `models/RoutineCompletion.js` (dateKey + completedItems[]), `controllers/routineController.js`, `routes/routineRoutes.js` → `GET/PATCH /api/routine`.
+- **Daily Checklist**: `models/DailyChecklist.js` (only stores the one field that can't be derived — `dietFollowed`). Workout/cardio/water3L/protein-goal are all read live from `WorkoutCompletion`/`DailyStats`/`DietEntry`, same read-derived pattern as Challenges/History. `controllers/checklistController.js`, `routes/checklistRoutes.js` → `GET/PATCH /api/checklist`. Uses a 3L water threshold (3000ml) specific to this module and Night Summary — intentionally different from the existing Dashboard/Challenges 4L target, since the new spec explicitly calls for 3L.
+- **100 Days Challenge**: `models/HundredDaysSettings.js` (singleton start date, auto-created as today on first load) + `models/HundredDaysEntry.js` (per-day completed flag, 1-100). `controllers/hundredDaysController.js` computes the full 100-day grid with dateKeys, current streak (consecutive completed days ending at today), longest streak, and progress %. `routes/hundredDaysRoutes.js` → `GET /api/hundred-days`, `PATCH /api/hundred-days/day/:dayNumber`, `POST /api/hundred-days/reset`.
+- **Profile**: `models/Profile.js` (singleton name + imageUrl). Image upload via `multer` (added as a new dependency, pinned to the maintained 2.x line — not 1.x, which has known CVEs) writing to `backend/uploads/`, served statically at `/uploads` (mounted in `server.js` before the Mongo-required routes, so it works even if Mongo is briefly down). Old image file is deleted when a new one is uploaded. `controllers/profileController.js`, `routes/profileRoutes.js`, `utils/uploadStorage.js` → `GET/PUT /api/profile`, `POST /api/profile/image`.
+- **DailyStats extended**: added `caloriesBurned` (manual entry, same pattern as steps/water) plus a new read-only `GET /api/dailystats/suggested-burn/:date`, which suggests a default burn value from the day's `WorkoutCompletion` (parses the existing `workoutPlan.js` `estimatedBurn` range string into an average, +250 kcal flat if cardio was checked). This is a suggestion only — the user still confirms/edits the actual value, nothing is auto-saved.
+
+New frontend pages/nav items, in the existing per-page-fetch style (no global state):
+
+- **My Diet** (`/my-diet`) — shows the current weekday/date and the full daily meal plan (there is no per-weekday-distinct diet content in the spec beyond the fixed Daily Routine, so this page presents that routine's meal sections as "today's diet").
+- **Diet Library** — this is the existing Diet Food page (`/diet`), relabeled in the sidebar to match the spec's naming; the page's food-item CRUD + Add-to-Today's-Diet + Edit already satisfied the Diet Library / Food Tracking spec sections, so no duplicate page was built.
+- **Daily Routine** (`/routine`) — interactive per-date checklist version of the same routine data, persisted via `RoutineCompletion`.
+- **Daily Checklist** (`/checklist`) — the 5 required items with a completion %; 4 are read-only/derived, "Diet Followed" is the one manual toggle.
+- **100 Days Challenge** (`/100-days`) — grid of 100 tappable days, streak/longest-streak/progress stats.
+- **Night Summary** (`/night-summary`) — derived entirely from existing endpoints (diet totals, daily stats, workout completion, weight), no new model. Result status (Deficit/Maintenance/Surplus) is based on calories consumed vs. the existing 1300 kcal daily target (±50 kcal band), matching the spec's own worked example (1280 kcal read as "Deficit Achieved" even though burn was only 450 — the example is clearly budget-relative, not consumed-minus-burned). Includes a same-metric comparison against the previous calendar date.
+- **Notifications** — pure frontend, `frontend/src/lib/notifications.js` + `components/notifications/NotificationScheduler.jsx` (polls every 30s against a fixed daily schedule, dedupes per day via localStorage) + `NotificationBell.jsx` (permission request / on-off toggle, shown in the mobile header and as a persistent top-right control on desktop). No backend involved — uses the browser Notification API directly, per the spec's "Browser Notifications" requirement.
+- **Profile image upload** — `components/profile/ProfileAvatar.jsx` + `lib/useProfile.js`, shown at the bottom of the sidebar (full) and in the mobile header (compact). Click the avatar to upload a new photo.
+- **Dashboard** — added the three stat cards the spec required that weren't already present: Calories Burned Today (manual entry + a "Use Suggested" button backed by the new suggested-burn endpoint), Cardio Status, and Weight Progress % (using the oldest of the last 100 weight entries as the starting point, same formula as the existing `WeightGoalCard`).
+- **Edit button fix**: the Diet Food/Protein edit forms were already functionally wired to the update APIs, but rendered inline in the page rather than as a popup, and gave no save confirmation. Both are now real overlay modals (`components/common/Modal.jsx`), the submit button reads "Save Changes" when editing (vs. "Save Food"/"Save Protein" when adding), and a success toast (`components/common/Toast.jsx` + `lib/useToast.js`) confirms the save. Diet Food's list is also re-fetched after a save.
+
+Files intentionally left untouched: everything listed under "Files That Must Not Be Replaced" below, plus `Challenges`/`Coins`/`Progress`/`History` in full — none of Phase 10's work modifies their models, controllers, routes, or components.
+
+New backend dependency: `multer@^2.2.0` (installed and verified with `npm install`).
+
+Tests completed (2026-08-14):
+
+- `node --check` passed on every new/edited backend file.
+- Backend started clean against the live MongoDB Atlas connection; full regression sweep of every pre-existing `GET` endpoint (fooditems, proteins, foodlogs, workouts, weights, challenges, progress, rewards) still returns `200`.
+- All new endpoints exercised directly with `curl`, including the PATCH/toggle paths (routine progress, checklist diet-followed, 100-days day toggle) — verified correct response shape and math, then reset the real "today" records back to their pre-test state (no test residue left in `routineCompletions`, `dailyChecklists`, or the 100-day entry for day 1).
+- Profile image upload tested end-to-end (upload → served at `/uploads/...` with CORS working → re-upload deletes the previous file) using a throwaway test PNG, then reset `imageUrl` back to empty afterward — no leftover test file in `backend/uploads/`.
+- `npm run build` in `frontend` succeeds.
+- A local `frontend/.env.local` (gitignored, does not affect the deployed `.env`) was added pointing `VITE_API_URL` at `http://localhost:5000/api`, so local dev now talks to the local backend instead of the Railway production URL in `.env`. Both the local backend (`node src/server.js`) and frontend (`npm run dev`) were left running for continued manual testing.
+- Browser UI click-through was not performed (no browser tool available in this environment, same limitation noted in Phases 7-9) — verified instead via successful build, full endpoint testing, and code review of every new component's data flow.
+
+## Unfinished / worth knowing for next session
+
+- Night Summary's deficit/maintenance/surplus logic is budget-relative (vs. the 1300 kcal target), not a true calories-in-vs-calories-out calculation, because the app has no BMR/TDEE concept anywhere. This mirrors the spec's own example.
+- 100 Days Challenge has no admin control to change the start date once set, other than the unexposed `POST /api/hundred-days/reset` (wipes all progress) — no UI button calls it yet.
+- Notification times are fixed defaults (water at 08:00/11:30/15:00/18:00, workout at 05:45, weight at 21:00, one rotating motivational message at 09:00); there's no settings UI yet to customize them.
+- Daily Checklist's "Water 3L" (3000ml) and the rest of the app's existing "4L" water target intentionally coexist — they serve different modules and weren't unified, since unifying them was out of scope and risked changing already-shipped Challenges/Dashboard behavior.
+
 
 ## Current Project Structure
 

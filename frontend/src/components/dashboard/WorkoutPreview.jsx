@@ -17,7 +17,7 @@ export default function WorkoutPreview({ onStatusChange }) {
     try {
       const workoutState = await api.getTodayWorkout(dateKey)
       setTodayWorkout(workoutState)
-      onStatusChange?.(Boolean(workoutState.completed))
+      onStatusChange?.(workoutState)
     } catch (loadError) {
       setError(loadError.message)
     }
@@ -34,12 +34,12 @@ export default function WorkoutPreview({ onStatusChange }) {
 
         if (isMounted) {
           setTodayWorkout(workoutState)
-          onStatusChange?.(Boolean(workoutState.completed))
+          onStatusChange?.(workoutState)
         }
       } catch (loadError) {
         if (isMounted) {
           setError(loadError.message)
-          onStatusChange?.(false)
+          onStatusChange?.(null)
         }
       } finally {
         if (isMounted) {
@@ -60,7 +60,11 @@ export default function WorkoutPreview({ onStatusChange }) {
 
     try {
       const result = await api.saveWorkoutProgress({ dateKey, completedExercises, cardioCompleted })
-      setTodayWorkout((current) => (current ? { ...current, completion: result.completion } : current))
+      setTodayWorkout((current) => {
+        const next = current ? { ...current, completion: result.completion } : current
+        onStatusChange?.(next)
+        return next
+      })
     } catch (progressError) {
       setError(progressError.message)
     }

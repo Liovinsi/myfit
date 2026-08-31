@@ -6,13 +6,17 @@ const meals = ['Breakfast', 'Lunch', 'Mid Lunch', 'Evening Snack', 'Dinner']
 
 function summarize(entries) {
   const groupedMeals = Object.fromEntries(meals.map((meal) => [meal, []]))
-  const totals = { calories: 0, protein: 0, fiber: 0 }
+  const totals = { calories: 0, protein: 0, fiber: 0, carbs: 0, fat: 0, sugar: 0, caffeine: 0 }
 
   entries.forEach((entry) => {
     groupedMeals[entry.meal].push(entry)
     totals.calories += entry.nutrition.calories
     totals.protein += entry.nutrition.protein
     totals.fiber += entry.nutrition.fiber
+    totals.carbs += entry.nutrition.carbs || 0
+    totals.fat += entry.nutrition.fat || 0
+    totals.sugar += entry.nutrition.sugar || 0
+    totals.caffeine += entry.nutrition.caffeine || 0
   })
 
   return {
@@ -21,7 +25,11 @@ function summarize(entries) {
     totals: {
       calories: Math.round(totals.calories * 10) / 10,
       protein: Math.round(totals.protein * 10) / 10,
-      fiber: Math.round(totals.fiber * 10) / 10
+      fiber: Math.round(totals.fiber * 10) / 10,
+      carbs: Math.round(totals.carbs * 10) / 10,
+      fat: Math.round(totals.fat * 10) / 10,
+      sugar: Math.round(totals.sugar * 10) / 10,
+      caffeine: Math.round(totals.caffeine * 10) / 10
     }
   }
 }

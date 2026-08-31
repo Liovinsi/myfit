@@ -4,17 +4,22 @@ import express from 'express'
 import mongoose from 'mongoose'
 import { connectDB } from './config/db.js'
 import challengeRoutes from './routes/challengeRoutes.js'
+import checklistRoutes from './routes/checklistRoutes.js'
 import dailyStatsRoutes from './routes/dailyStatsRoutes.js'
 import dietRoutes from './routes/dietRoutes.js'
 import foodRoutes from './routes/foodRoutes.js'
 import healthRoutes from './routes/healthRoutes.js'
+import hundredDaysRoutes from './routes/hundredDaysRoutes.js'
+import profileRoutes from './routes/profileRoutes.js'
 import progressRoutes from './routes/progressRoutes.js'
 import proteinRoutes from './routes/proteinRoutes.js'
 import rewardRoutes from './routes/rewardRoutes.js'
+import routineRoutes from './routes/routineRoutes.js'
 import weightRoutes from './routes/weightRoutes.js'
 import workoutRoutes from './routes/workoutRoutes.js'
 import { seedRegularFoods } from './seed/regularFoods.js'
 import { seedProteinFoods } from './seed/proteinFoods.js'
+import { uploadsDir } from './utils/uploadStorage.js'
 
 dotenv.config()
 
@@ -23,6 +28,7 @@ const port = process.env.PORT || 5000
 
 app.use(cors())
 app.use(express.json())
+app.use('/uploads', express.static(uploadsDir))
 
 app.get('/', (_req, res) => {
   res.json({
@@ -51,6 +57,10 @@ app.use('/api/weights', requireMongoConnection, weightRoutes)
 app.use('/api/challenges', requireMongoConnection, challengeRoutes)
 app.use('/api/progress', requireMongoConnection, progressRoutes)
 app.use('/api/rewards', requireMongoConnection, rewardRoutes)
+app.use('/api/routine', requireMongoConnection, routineRoutes)
+app.use('/api/checklist', requireMongoConnection, checklistRoutes)
+app.use('/api/hundred-days', requireMongoConnection, hundredDaysRoutes)
+app.use('/api/profile', requireMongoConnection, profileRoutes)
 
 app.use((error, _req, res, _next) => {
   if (error.code === 11000) {

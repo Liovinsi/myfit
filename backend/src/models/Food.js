@@ -41,6 +41,26 @@ const foodSchema = new mongoose.Schema(
         type: Number,
         required: true,
         min: 0
+      },
+      carbs: {
+        type: Number,
+        min: 0,
+        default: 0
+      },
+      fat: {
+        type: Number,
+        min: 0,
+        default: 0
+      },
+      sugar: {
+        type: Number,
+        min: 0,
+        default: 0
+      },
+      caffeine: {
+        type: Number,
+        min: 0,
+        default: 0
       }
     },
     notes: {

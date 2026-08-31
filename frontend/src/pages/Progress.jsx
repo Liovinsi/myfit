@@ -56,6 +56,9 @@ export default function Progress() {
         setToday({
           calories: diet.totals?.calories || 0,
           protein: diet.totals?.protein || 0,
+          fiber: diet.totals?.fiber || 0,
+          carbs: diet.totals?.carbs || 0,
+          fat: diet.totals?.fat || 0,
           steps: stats.steps || 0,
           waterMl: stats.waterMl || 0,
           workoutCompleted: Boolean(workout.completed),
@@ -173,7 +176,14 @@ export default function Progress() {
 
       {today && (
         <div className="grid gap-6 lg:grid-cols-2">
-          <DailyNutritionSection calories={today.calories} protein={today.protein} waterMl={today.waterMl} />
+          <DailyNutritionSection
+            calories={today.calories}
+            protein={today.protein}
+            waterMl={today.waterMl}
+            fiber={today.fiber}
+            carbs={today.carbs}
+            fat={today.fat}
+          />
           <ActivityProgressSection
             steps={today.steps}
             workoutCompleted={today.workoutCompleted}

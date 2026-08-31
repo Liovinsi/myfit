@@ -27,7 +27,11 @@ const dietEntrySchema = new mongoose.Schema(
       nutrition: {
         calories: { type: Number, required: true },
         protein: { type: Number, required: true },
-        fiber: { type: Number, required: true }
+        fiber: { type: Number, required: true },
+        carbs: { type: Number, default: 0 },
+        fat: { type: Number, default: 0 },
+        sugar: { type: Number, default: 0 },
+        caffeine: { type: Number, default: 0 }
       }
     },
     quantity: {
@@ -45,7 +49,11 @@ const dietEntrySchema = new mongoose.Schema(
     nutrition: {
       calories: { type: Number, required: true, min: 0 },
       protein: { type: Number, required: true, min: 0 },
-      fiber: { type: Number, required: true, min: 0 }
+      fiber: { type: Number, required: true, min: 0 },
+      carbs: { type: Number, min: 0, default: 0 },
+      fat: { type: Number, min: 0, default: 0 },
+      sugar: { type: Number, min: 0, default: 0 },
+      caffeine: { type: Number, min: 0, default: 0 }
     }
   },
   { timestamps: true }
