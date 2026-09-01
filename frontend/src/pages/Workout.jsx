@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ErrorState, LoadingState } from '../components/common/StatusState.jsx'
+import Toast from '../components/common/Toast.jsx'
 import WorkoutDayPanel from '../components/workout/WorkoutDayPanel.jsx'
 import { api, getTodayKey } from '../lib/api.js'
+import { useToast } from '../lib/useToast.js'
 
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
 
@@ -18,7 +20,10 @@ export default function Workout() {
   const [completion, setCompletion] = useState(null)
   const [isLoading, setLoading] = useState(true)
   const [isCompleting, setCompleting] = useState(false)
+  const [loadError, setLoadError] = useState('')
   const [error, setError] = useState('')
+  const [reloadToken, setReloadToken] = useState(0)
+  const { toastMessage, showToast } = useToast()
 
   const selectedWorkout = useMemo(
     () => workouts.find((workout) => workout.day === selectedDay),
@@ -34,27 +39,42 @@ export default function Workout() {
     let isMounted = true
 
     async function loadPage() {
+      setLoadError('')
       setError('')
       setLoading(true)
 
+      // The workout plan is static data and must load even if the completion
+      // tracking API (which needs MongoDB) is unavailable, so it's fetched
+      // separately rather than failing the whole page together.
+      let workoutList
       try {
-        const [workoutList, completionState] = await Promise.all([
-          api.getWorkouts(),
-          api.getWorkoutCompletion(selectedDate)
-        ])
-
+        workoutList = await api.getWorkouts()
+      } catch (workoutLoadError) {
         if (isMounted) {
-          setWorkouts(workoutList)
-          setCompletion(completionState.completion || null)
-        }
-      } catch (loadError) {
-        if (isMounted) {
-          setError(loadError.message)
-        }
-      } finally {
-        if (isMounted) {
+          setLoadError(workoutLoadError.message)
           setLoading(false)
         }
+        return
+      }
+
+      if (isMounted) {
+        setWorkouts(workoutList)
+      }
+
+      try {
+        const completionState = await api.getWorkoutCompletion(selectedDate)
+        if (isMounted) {
+          setCompletion(completionState.completion || null)
+        }
+      } catch {
+        if (isMounted) {
+          setCompletion(null)
+        }
+      }
+
+      if (isMounted) {
+        setLoading(false)
+        showToast('Workout loaded successfully')
       }
     }
 
@@ -63,7 +83,7 @@ export default function Workout() {
     return () => {
       isMounted = false
     }
-  }, [selectedDate])
+  }, [selectedDate, reloadToken])
 
   async function saveWorkoutProgress({ completedExercises, cardioCompleted }) {
     setError('')
@@ -99,8 +119,18 @@ export default function Workout() {
     return <LoadingState label="Loading Workout..." />
   }
 
+  if (loadError) {
+    return (
+      <ErrorState
+        message={`Failed to load workout — ${loadError}`}
+        onRetry={() => setReloadToken((token) => token + 1)}
+      />
+    )
+  }
+
   return (
     <div className="space-y-6">
+      <Toast message={toastMessage} />
       <section className="flex flex-col gap-4 rounded-3xl bg-white p-6 shadow-card md:flex-row md:items-end md:justify-between md:p-8">
         <div>
           <p className="text-sm font-extrabold uppercase tracking-[0.18em] text-accent">Workout</p>

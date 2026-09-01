@@ -17,6 +17,7 @@ import rewardRoutes from './routes/rewardRoutes.js'
 import routineRoutes from './routes/routineRoutes.js'
 import weightRoutes from './routes/weightRoutes.js'
 import workoutRoutes from './routes/workoutRoutes.js'
+import { requireMongoConnection } from './middleware/requireMongoConnection.js'
 import { seedRegularFoods } from './seed/regularFoods.js'
 import { seedProteinFoods } from './seed/proteinFoods.js'
 import { uploadsDir } from './utils/uploadStorage.js'
@@ -26,7 +27,40 @@ dotenv.config()
 const app = express()
 const port = process.env.PORT || 5000
 
-app.use(cors())
+const defaultAllowedOrigins = ['http://localhost:5173', 'http://localhost:3000']
+const configuredAllowedOrigins = (process.env.FRONTEND_URL || process.env.CORS_ORIGINS || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean)
+const allowedOrigins = [...defaultAllowedOrigins, ...configuredAllowedOrigins]
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      // Non-browser requests (curl, server-to-server, health checks) send no Origin header.
+      if (!origin) {
+        return callback(null, true)
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true)
+      }
+
+      try {
+        // Allow any Vercel deployment (production + preview URLs) without needing
+        // to hardcode the exact project domain.
+        if (new URL(origin).hostname.endsWith('.vercel.app')) {
+          return callback(null, true)
+        }
+      } catch {
+        // Not a parseable origin, fall through to reject below.
+      }
+
+      return callback(new Error('Not allowed by CORS'))
+    },
+    credentials: true
+  })
+)
 app.use(express.json())
 app.use('/uploads', express.static(uploadsDir))
 
@@ -38,20 +72,15 @@ app.get('/', (_req, res) => {
 })
 
 app.use('/api/health', healthRoutes)
-function requireMongoConnection(_req, res, next) {
-  if (mongoose.connection.readyState !== 1) {
-    return res.status(503).json({ message: 'MongoDB is not connected' })
-  }
-
-  next()
-}
 
 app.use('/api/fooditems', requireMongoConnection, foodRoutes)
 app.use('/api/foods', requireMongoConnection, foodRoutes)
 app.use('/api/proteins', requireMongoConnection, proteinRoutes)
 app.use('/api/foodlogs', requireMongoConnection, dietRoutes)
 app.use('/api/diet', requireMongoConnection, dietRoutes)
-app.use('/api/workouts', requireMongoConnection, workoutRoutes)
+// Workout routes are not blanket-guarded: the workout plan is static data and
+// must stay available even when MongoDB is down (see workoutRoutes.js).
+app.use('/api/workouts', workoutRoutes)
 app.use('/api/dailystats', requireMongoConnection, dailyStatsRoutes)
 app.use('/api/weights', requireMongoConnection, weightRoutes)
 app.use('/api/challenges', requireMongoConnection, challengeRoutes)
@@ -79,18 +108,23 @@ app.use((error, _req, res, _next) => {
   res.status(500).json({ message: 'Something went wrong' })
 })
 
-connectDB()
-  .then(async () => {
-    if (process.env.MONGODB_URI) {
+async function start() {
+  try {
+    await connectDB()
+
+    if (mongoose.connection.readyState === 1) {
       await seedRegularFoods()
       await seedProteinFoods()
     }
+  } catch (error) {
+    // Don't let a MongoDB outage take down the whole API — routes that don't
+    // need the database (like the static workout plan) must keep working.
+    console.error('Starting without a database connection:', error.message)
+  }
+
+  app.listen(port, () => {
+    console.log(`MyFit backend running on port ${port}`)
   })
-  .then(() => {
-    app.listen(port, () => {
-      console.log(`MyFit backend running on port ${port}`)
-    })
-  })
-  .catch(() => {
-    process.exit(1)
-  })
+}
+
+start()

@@ -15,10 +15,19 @@ export function EmptyState({ title, message }) {
   )
 }
 
-export function ErrorState({ message }) {
+export function ErrorState({ message, onRetry }) {
   return (
     <div className="rounded-2xl border border-rose-200 bg-rose-50 p-5 text-sm font-semibold text-rose-700">
-      {message}
+      <p>{message}</p>
+      {onRetry && (
+        <button
+          type="button"
+          onClick={onRetry}
+          className="mt-3 inline-flex items-center justify-center rounded-xl bg-rose-600 px-4 py-2 text-xs font-extrabold text-white shadow-sm transition hover:bg-rose-700"
+        >
+          Retry
+        </button>
+      )}
     </div>
   )
 }
