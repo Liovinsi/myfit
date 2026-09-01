@@ -11,21 +11,24 @@ async function request(path, options = {}) {
       },
       ...options
     })
-  } catch {
-    throw new Error(`Cannot reach MyFit backend at ${API_BASE_URL}`)
+  } catch (networkError) {
+    console.error(`Request to ${API_BASE_URL}${path} failed:`, networkError)
+    throw new Error(
+      `Cannot reach MyFit backend at ${API_BASE_URL} (${networkError.message}). It may be a CORS or network issue.`
+    )
   }
 
   if (!response.ok) {
-    let message = 'Request failed'
+    let message = response.statusText || 'Request failed'
 
     try {
       const body = await response.json()
       message = body.message || message
     } catch {
-      message = response.statusText || message
+      // Response body wasn't JSON; fall back to statusText already set above.
     }
 
-    throw new Error(message)
+    throw new Error(`${response.status} ${message}`)
   }
 
   if (response.status === 204) {
@@ -165,21 +168,24 @@ export const api = {
         method: 'POST',
         body: formData
       })
-    } catch {
-      throw new Error(`Cannot reach MyFit backend at ${API_BASE_URL}`)
+    } catch (networkError) {
+      console.error(`Request to ${API_BASE_URL}/profile/image failed:`, networkError)
+      throw new Error(
+        `Cannot reach MyFit backend at ${API_BASE_URL} (${networkError.message}). It may be a CORS or network issue.`
+      )
     }
 
     if (!response.ok) {
-      let message = 'Image upload failed'
+      let message = response.statusText || 'Image upload failed'
 
       try {
         const body = await response.json()
         message = body.message || message
       } catch {
-        message = response.statusText || message
+        // Response body wasn't JSON; fall back to statusText already set above.
       }
 
-      throw new Error(message)
+      throw new Error(`${response.status} ${message}`)
     }
 
     return response.json()

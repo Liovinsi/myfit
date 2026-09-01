@@ -71,6 +71,14 @@ app.get('/', (_req, res) => {
   })
 })
 
+app.get('/api', (_req, res) => {
+  res.json({
+    status: 'ok',
+    app: 'MyFit',
+    message: 'MyFit API is running'
+  })
+})
+
 app.use('/api/health', healthRoutes)
 
 app.use('/api/fooditems', requireMongoConnection, foodRoutes)
