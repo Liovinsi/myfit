@@ -1,7 +1,8 @@
 import { Minus, Plus, Trash2 } from 'lucide-react'
 import { EmptyState } from '../common/StatusState.jsx'
 
-const meals = ['Breakfast', 'Lunch', 'Mid Lunch', 'Evening Snack', 'Dinner']
+// Includes 'Snack' and 'Other', which only Daily Routine's Extra Today items use.
+const meals = ['Breakfast', 'Lunch', 'Mid Lunch', 'Evening Snack', 'Dinner', 'Snack', 'Other']
 
 function formatNumber(value) {
   return Number(value).toLocaleString('en-US', { maximumFractionDigits: 1 })

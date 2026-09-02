@@ -2,7 +2,10 @@ import DietEntry from '../models/DietEntry.js'
 import Food from '../models/Food.js'
 import { calculateNutrition, dateKeyFromRequest, todayDateKey } from '../utils/nutrition.js'
 
-const meals = ['Breakfast', 'Lunch', 'Mid Lunch', 'Evening Snack', 'Dinner']
+// 'Snack' and 'Other' aren't offered when logging from the food catalog (see
+// MealSelector.jsx), but Extra Today items (routineController.js) can create
+// DietEntry documents tagged with them, so summarize() must group them too.
+const meals = ['Breakfast', 'Lunch', 'Mid Lunch', 'Evening Snack', 'Dinner', 'Snack', 'Other']
 
 function summarize(entries) {
   const groupedMeals = Object.fromEntries(meals.map((meal) => [meal, []]))

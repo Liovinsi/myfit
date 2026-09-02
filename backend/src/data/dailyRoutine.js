@@ -3,40 +3,31 @@ export const dailyRoutine = {
   sections: [
     {
       id: 'pre-workout',
-      title: 'Pre Workout',
-      items: [{ id: 'leanbody-tablets', label: 'Leanbody tablet x2 with water' }]
-    },
-    {
-      id: 'post-workout',
-      title: 'Post Workout',
+      title: 'Morning / Pre Workout',
       items: [
-        { id: 'madhulai-juice', label: 'Madhulai Juice (No Sugar)' },
-        { id: 'rolled-oats', label: '70g Rolled Oats' },
-        { id: 'full-egg', label: '1 Full Egg' }
-      ]
-    },
-    {
-      id: '11am',
-      title: '11 AM',
-      items: [
-        { id: 'sathukudi-juice', label: 'Sathukudi Juice' },
-        { id: 'chia-seeds', label: 'Chia Seeds' },
-        { id: 'sabja-seeds', label: 'Sabja Seeds' }
+        { id: 'pre-workout-warmup', label: 'Pre-workout – 15 min' },
+        { id: 'gym-weight-training', label: 'Gym – Weight Training' },
+        { id: 'treadmill-walking', label: 'Treadmill Walking – 30 min' },
+        // Checking this credits 1000 ml to today's water total (see routineController's
+        // water-credit logic) so it isn't left out of the day's water tracking, and
+        // unchecking reverses the same amount so it's never double counted.
+        { id: 'workout-water', label: 'Water – approx. 1 L around workout', waterCreditMl: 1000 },
+        { id: 'madhulai-juice', label: 'Madhulai Juice' },
+        { id: 'herbalife-shake', label: 'Fresh Herbalife Shake' },
+        { id: 'almonds', label: '5 Almonds' },
+        { id: 'flax-seeds', label: 'Flax Seeds – 1 small spoon' },
+        { id: 'pumpkin-seeds', label: 'Pumpkin Seeds – 1 small spoon' }
       ]
     },
     {
       id: 'lunch',
       title: 'Lunch',
       items: [
-        { id: 'chicken', label: '120g Chicken (No Oil)' },
+        { id: 'chicken', label: 'Chicken' },
         { id: 'chapathi-rice', label: 'Chapathi or Rice' },
-        { id: 'egg-white', label: 'Egg White' }
+        { id: 'egg-white-2', label: '2 Egg Whites' },
+        { id: 'full-egg', label: '1 Full Egg' }
       ]
-    },
-    {
-      id: 'alternate-days',
-      title: 'Alternate Days',
-      items: [{ id: 'nakpro-shake', label: 'Nakpro Protein Shake' }]
     },
     {
       id: 'dinner',
@@ -54,4 +45,8 @@ export const dailyRoutine = {
 
 export const dailyRoutineItemIds = dailyRoutine.sections.flatMap((section) =>
   section.items.map((item) => item.id)
+)
+
+export const dailyRoutineItemsById = Object.fromEntries(
+  dailyRoutine.sections.flatMap((section) => section.items.map((item) => [item.id, item]))
 )

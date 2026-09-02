@@ -145,6 +145,20 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify({ dateKey, completedItems })
     }),
+  addExtraRoutineItem: (payload) =>
+    request('/routine/extra', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }),
+  updateExtraRoutineItem: (id, payload) =>
+    request(`/routine/extra/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload)
+    }),
+  deleteExtraRoutineItem: (id) =>
+    request(`/routine/extra/${id}`, {
+      method: 'DELETE'
+    }),
 
   getChecklist: (dateKey = getTodayKey()) => request(`/checklist/${dateKey}`),
   setDietFollowed: ({ dateKey = getTodayKey(), dietFollowed }) =>

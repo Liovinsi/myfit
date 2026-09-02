@@ -10,7 +10,7 @@ const dietEntrySchema = new mongoose.Schema(
     meal: {
       type: String,
       required: true,
-      enum: ['Breakfast', 'Lunch', 'Mid Lunch', 'Evening Snack', 'Dinner']
+      enum: ['Breakfast', 'Lunch', 'Mid Lunch', 'Evening Snack', 'Dinner', 'Snack', 'Other']
     },
     food: {
       type: mongoose.Schema.Types.ObjectId,

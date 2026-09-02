@@ -24,7 +24,14 @@ function CompletionRow({ label, percent, completed }) {
   )
 }
 
-export default function DailyCompletionSection({ calories, protein, waterMl, steps, workoutCompleted }) {
+export default function DailyCompletionSection({
+  calories,
+  protein,
+  waterMl,
+  steps,
+  workoutCompleted,
+  routineCompletionPercent = 0
+}) {
   const caloriePercent = Math.round((calories / CALORIE_TARGET) * 100)
   const proteinPercent = Math.round((protein / PROTEIN_TARGET) * 100)
   const waterPercent = Math.round((waterMl / WATER_TARGET_ML) * 100)
@@ -33,12 +40,17 @@ export default function DailyCompletionSection({ calories, protein, waterMl, ste
   return (
     <section className="dashboard-card p-5">
       <h2 className="text-lg font-extrabold text-navy">Daily Completion</h2>
-      <div className="mt-4 grid gap-4 sm:grid-cols-5">
+      <div className="mt-4 grid gap-4 sm:grid-cols-3 lg:grid-cols-6">
         <CompletionRow label="Nutrition" percent={caloriePercent} />
         <CompletionRow label="Protein" percent={proteinPercent} />
         <CompletionRow label="Water" percent={waterPercent} />
         <CompletionRow label="Steps" percent={stepsPercent} />
         <CompletionRow label="Workout" percent={workoutCompleted ? 100 : 0} completed={workoutCompleted} />
+        <CompletionRow
+          label="Routine"
+          percent={routineCompletionPercent}
+          completed={routineCompletionPercent >= 100}
+        />
       </div>
     </section>
   )

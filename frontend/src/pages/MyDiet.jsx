@@ -3,10 +3,6 @@ import { useEffect, useState } from 'react'
 import { ErrorState, LoadingState } from '../components/common/StatusState.jsx'
 import { api } from '../lib/api.js'
 
-// Excluded here rather than in the shared dailyRoutine.js source, since that data also
-// feeds the separate Daily Routine checklist page, which still needs Post Workout.
-const EXCLUDED_SECTION_IDS = ['post-workout']
-
 function formatToday(date = new Date()) {
   return date.toLocaleDateString('en-US', {
     weekday: 'long',
@@ -78,24 +74,22 @@ export default function MyDiet() {
           </section>
 
           <section className="grid gap-4 md:grid-cols-2">
-            {data.routine.sections
-              .filter((section) => !EXCLUDED_SECTION_IDS.includes(section.id))
-              .map((section) => (
-                <article key={section.id} className="dashboard-card p-5">
-                  <h2 className="text-lg font-extrabold text-navy">{section.title}</h2>
-                  <ul className="mt-3 space-y-2">
-                    {section.items.map((item) => (
-                      <li
-                        key={item.id}
-                        className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-sm font-bold text-slate-700"
-                      >
-                        <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden="true" />
-                        {item.label}
-                      </li>
-                    ))}
-                  </ul>
-                </article>
-              ))}
+            {data.routine.sections.map((section) => (
+              <article key={section.id} className="dashboard-card p-5">
+                <h2 className="text-lg font-extrabold text-navy">{section.title}</h2>
+                <ul className="mt-3 space-y-2">
+                  {section.items.map((item) => (
+                    <li
+                      key={item.id}
+                      className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-sm font-bold text-slate-700"
+                    >
+                      <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden="true" />
+                      {item.label}
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            ))}
           </section>
 
           <section className="dashboard-card flex items-center gap-4 border-blue-100 bg-blue-50 p-5">

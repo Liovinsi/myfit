@@ -32,6 +32,7 @@ export default function History() {
   const [dailyStats, setDailyStats] = useState({ steps: 0, waterMl: 0 })
   const [workoutState, setWorkoutState] = useState(null)
   const [weightEntry, setWeightEntry] = useState(null)
+  const [routine, setRoutine] = useState(null)
   const [isLoading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -43,11 +44,12 @@ export default function History() {
       setError('')
 
       try {
-        const [dietResult, statsResult, workoutResult, weightResult] = await Promise.all([
+        const [dietResult, statsResult, workoutResult, weightResult, routineResult] = await Promise.all([
           api.getTodayDiet(selectedDate),
           api.getDailyStats(selectedDate),
           api.getTodayWorkout(selectedDate),
-          api.getWeightEntry(selectedDate)
+          api.getWeightEntry(selectedDate),
+          api.getRoutine(selectedDate)
         ])
 
         if (isMounted) {
@@ -55,6 +57,7 @@ export default function History() {
           setDailyStats(statsResult)
           setWorkoutState(workoutResult)
           setWeightEntry(weightResult.entry)
+          setRoutine(routineResult)
         }
       } catch (loadError) {
         if (isMounted) {
@@ -82,8 +85,15 @@ export default function History() {
   const workoutCompleted = Boolean(workoutState?.completed)
   const isToday = selectedDate === getTodayKey()
 
+  const routineCompletedCount = routine?.completedCount || 0
+
   const hasAnyActivity =
-    diet.entries.length > 0 || steps > 0 || waterMl > 0 || workoutCompleted || weightEntry != null
+    diet.entries.length > 0 ||
+    steps > 0 ||
+    waterMl > 0 ||
+    workoutCompleted ||
+    weightEntry != null ||
+    routineCompletedCount > 0
 
   if (isLoading) {
     return <LoadingState label="Loading History..." />
@@ -168,6 +178,7 @@ export default function History() {
             waterMl={waterMl}
             steps={steps}
             workoutCompleted={workoutCompleted}
+            routineCompletionPercent={routine?.completionPercent || 0}
           />
 
           <div className="grid gap-6 lg:grid-cols-2">
