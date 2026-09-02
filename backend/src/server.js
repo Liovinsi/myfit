@@ -27,7 +27,15 @@ dotenv.config()
 const app = express()
 const port = process.env.PORT || 5000
 
-const defaultAllowedOrigins = ['http://localhost:5173', 'http://localhost:3000']
+const defaultAllowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  // The deployed MyFit frontend (per this repo's GitHub "homepage" field,
+  // set by the Vercel GitHub integration). Kept as a built-in default so
+  // preflight works even before FRONTEND_URL is set on Render; FRONTEND_URL
+  // below still overrides/extends this if the frontend moves to another domain.
+  'https://myfit-blond.vercel.app'
+]
 const configuredAllowedOrigins = [process.env.FRONTEND_URL || '', process.env.CORS_ORIGINS || '']
   .join(',')
   .split(',')
