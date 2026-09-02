@@ -44,6 +44,8 @@ export default function Dashboard() {
   const [status, setStatus] = useState('loading')
   const [statsStatus, setStatsStatus] = useState('loading')
   const [statsError, setStatsError] = useState('')
+  const [weightError, setWeightError] = useState('')
+  const [coinsError, setCoinsError] = useState('')
   const [savingSteps, setSavingSteps] = useState(false)
   const [savingWater, setSavingWater] = useState(false)
   const [savingBurned, setSavingBurned] = useState(false)
@@ -106,9 +108,12 @@ export default function Dashboard() {
           const entries = Array.isArray(history) ? history : []
           const oldest = entries[entries.length - 1]
           setStartWeightKg(oldest?.weightKg ?? null)
+          setWeightError('')
         }
-      } catch {
-        // Current Weight card falls back to its placeholder values below.
+      } catch (weightLoadError) {
+        if (isMounted) {
+          setWeightError(weightLoadError.message)
+        }
       }
     }
 
@@ -128,9 +133,12 @@ export default function Dashboard() {
 
         if (isMounted) {
           setTotalCoins(result.totalCoins || 0)
+          setCoinsError('')
         }
-      } catch {
-        // Coins card falls back to its placeholder value below.
+      } catch (coinsLoadError) {
+        if (isMounted) {
+          setCoinsError(coinsLoadError.message)
+        }
       }
     }
 
@@ -464,6 +472,11 @@ export default function Dashboard() {
       <section className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
         <div className="flex flex-col gap-4">
           <ProgressCard />
+          {weightError && (
+            <p className="rounded-2xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-700">
+              Weight failed to load: {weightError}
+            </p>
+          )}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <StatCard
               title="Current Weight"
@@ -482,8 +495,13 @@ export default function Dashboard() {
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <StatCard title="Current Streak" value="0 Days" icon={Flame} tone="pink" />
-            <StatCard title="Coins" value={String(totalCoins)} icon={HandCoins} tone="green" />
+            <StatCard title="Coins" value={coinsError ? '--' : String(totalCoins)} icon={HandCoins} tone="green" />
           </div>
+          {coinsError && (
+            <p className="rounded-2xl border border-rose-200 bg-rose-50 p-3 text-xs font-semibold text-rose-700">
+              Coins failed to load: {coinsError}
+            </p>
+          )}
         </div>
         <WorkoutPreview onStatusChange={setWorkoutState} />
       </section>

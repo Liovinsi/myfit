@@ -93,6 +93,14 @@ app.use(
 app.use(express.json())
 app.use('/uploads', express.static(uploadsDir))
 
+// Every /api response reflects live MongoDB state and must never be served
+// stale by the browser or an intermediary (a GET right after a save must
+// return what was just written).
+app.use('/api', (_req, res, next) => {
+  res.set('Cache-Control', 'no-store')
+  next()
+})
+
 app.get('/', (_req, res) => {
   res.json({
     app: 'MyFit',

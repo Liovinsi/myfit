@@ -11,6 +11,10 @@ async function request(path, options = {}) {
 
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
+      // Every page re-fetches its data from MongoDB on mount/refresh; never let
+      // the browser (or an intermediary) serve a cached response for that,
+      // since a GET right after a save must reflect what was just written.
+      cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
         ...options.headers
