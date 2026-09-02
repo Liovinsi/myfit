@@ -28,11 +28,16 @@ const app = express()
 const port = process.env.PORT || 5000
 
 const defaultAllowedOrigins = ['http://localhost:5173', 'http://localhost:3000']
-const configuredAllowedOrigins = (process.env.FRONTEND_URL || process.env.CORS_ORIGINS || '')
+const configuredAllowedOrigins = [process.env.FRONTEND_URL || '', process.env.CORS_ORIGINS || '']
+  .join(',')
   .split(',')
-  .map((origin) => origin.trim())
+  .map((origin) => origin.trim().replace(/\/$/, ''))
   .filter(Boolean)
 const allowedOrigins = [...defaultAllowedOrigins, ...configuredAllowedOrigins]
+
+if (configuredAllowedOrigins.length > 0) {
+  console.log('CORS: explicitly allowed origins from FRONTEND_URL/CORS_ORIGINS:', configuredAllowedOrigins)
+}
 
 app.use(
   cors({
@@ -42,7 +47,9 @@ app.use(
         return callback(null, true)
       }
 
-      if (allowedOrigins.includes(origin)) {
+      const normalizedOrigin = origin.replace(/\/$/, '')
+
+      if (allowedOrigins.includes(normalizedOrigin)) {
         return callback(null, true)
       }
 
@@ -56,9 +63,19 @@ app.use(
         // Not a parseable origin, fall through to reject below.
       }
 
-      return callback(new Error('Not allowed by CORS'))
+      console.warn(`CORS: rejected request from origin "${origin}". Allowed origins:`, allowedOrigins)
+      // Pass `false`, not an Error: the `cors` package forwards an Error to
+      // Express's error-handling middleware via next(err), which the generic
+      // handler below turns into a bare 500 with no CORS headers at all. That
+      // makes every rejected preflight look like a server crash instead of a
+      // clean "origin not allowed" response. Passing `false` just omits the
+      // Access-Control-Allow-Origin header, which is what actually makes the
+      // browser report a CORS failure.
+      return callback(null, false)
     },
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
   })
 )
 app.use(express.json())

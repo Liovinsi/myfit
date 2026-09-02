@@ -1,3 +1,9 @@
+if (import.meta.env.PROD && !import.meta.env.VITE_API_URL) {
+  throw new Error(
+    'VITE_API_URL is not set. Set it in the deployment environment (e.g. Vercel project settings) to the backend API URL, such as https://vidyafit.onrender.com/api.'
+  )
+}
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
 async function request(path, options = {}) {
