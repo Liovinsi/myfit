@@ -28,7 +28,11 @@ const app = express()
 const port = process.env.PORT || 5000
 
 const defaultAllowedOrigins = [
+  // Vite's default dev port, plus the next one it falls back to when 5173
+  // is already taken (e.g. another local project running). Extra local
+  // ports beyond these two can be added via CORS_ORIGINS without touching code.
   'http://localhost:5173',
+  'http://localhost:5174',
   'http://localhost:3000',
   // The deployed MyFit frontend (per this repo's GitHub "homepage" field,
   // set by the Vercel GitHub integration). Kept as a built-in default so
