@@ -153,7 +153,9 @@ app.use((error, _req, res, _next) => {
   res.status(500).json({ message: 'Something went wrong' })
 })
 
-async function start() {
+const MONGO_RETRY_DELAY_MS = 15000
+
+async function connectWithRetry() {
   try {
     await connectDB()
 
@@ -164,12 +166,22 @@ async function start() {
   } catch (error) {
     // Don't let a MongoDB outage take down the whole API — routes that don't
     // need the database (like the static workout plan) must keep working.
-    console.error('Starting without a database connection:', error.message)
+    // Keep retrying so a failed connect at boot (e.g. a slow or briefly
+    // unreachable Atlas cluster) doesn't leave every DB route stuck on 503
+    // until the next restart.
+    console.error(
+      `MongoDB unavailable (${error.message}); retrying in ${MONGO_RETRY_DELAY_MS / 1000}s`
+    )
+    setTimeout(connectWithRetry, MONGO_RETRY_DELAY_MS)
   }
+}
 
+function start() {
   app.listen(port, () => {
     console.log(`MyFit backend running on port ${port}`)
   })
+
+  connectWithRetry()
 }
 
 start()

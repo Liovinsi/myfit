@@ -1,10 +1,20 @@
 if (import.meta.env.PROD && !import.meta.env.VITE_API_URL) {
   throw new Error(
-    'VITE_API_URL is not set. Set it in the deployment environment (e.g. Vercel project settings) to the backend API URL, such as https://vidyafit.onrender.com/api.'
+    'VITE_API_URL is not set. Set it in the deployment environment (e.g. Vercel project settings) to the backend URL, such as https://vidyafit.onrender.com.'
   )
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+// Every backend route is mounted under /api (see backend/src/server.js).
+// VITE_API_URL may be given either as the bare backend origin
+// (https://vidyafit.onrender.com) or with the /api suffix; normalize both to
+// the /api base so requests never hit unmounted root paths like /fooditems
+// (Express 404 "Cannot GET") or a doubled /api/api.
+function normalizeApiBaseUrl(url) {
+  const trimmed = url.trim().replace(/\/+$/, '')
+  return trimmed.endsWith('/api') ? trimmed : `${trimmed}/api`
+}
+
+const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_URL || 'http://localhost:5000')
 
 async function request(path, options = {}) {
   let response
